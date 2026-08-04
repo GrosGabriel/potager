@@ -2,41 +2,12 @@
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-## Creating a project
+## This is a project for an app for gardening.
 
-If you're seeing this, you've probably already done this step. Congrats!
+The app will be used locally.
+You can add cultures you planted, to keep track of when you did it. You can add notes and pictures and see statistics about your garden.
 
-```sh
-# create a new project
-npx sv create my-app
-```
+# Build
 
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.16.6 create --template minimal --no-types --add tailwindcss="plugins:typography,forms" --install npm potagerLog
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The app uses tauri, and some rust inside tauri to build specific database (SQLite) calls.
+The frontend is made in svelte.
