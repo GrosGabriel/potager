@@ -1,4 +1,4 @@
-# This is a project for an app for gardening.
+# This is a project for a gardening app.
 
 The app will be used locally.
 You can add cultures you planted, to keep track of when you did it. You can add notes and pictures and see statistics about your garden.
