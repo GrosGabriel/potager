@@ -1,0 +1,36 @@
+<script>
+	import { invoke } from '@tauri-apps/api/core';
+	import { onMount } from 'svelte';
+
+	let cultures = $state([]);
+	let nom = $state('');
+
+	async function chargerCultures() {
+		cultures = await invoke('lister_cultures_cmd');
+	}
+
+	async function ajouter() {
+		if (!nom) return;
+		await invoke('ajouter_culture_cmd', { nom, variete: null, couleur: "Inconnue" });
+		nom = '';
+		await chargerCultures();
+	}
+
+	onMount(() => {
+		chargerCultures();
+	});
+</script>
+
+<h1>Mon Potager</h1>
+
+<form onsubmit={(e) => { e.preventDefault(); ajouter(); }}>
+	<input type="text" bind:value={nom} placeholder="Nom de la culture (ex: Tomate)" required />
+	<button type="submit">Ajouter</button>
+</form>
+
+<h2>Cultures enregistrées</h2>
+<ul>
+	{#each cultures as culture}
+		<li>{culture.nom}</li>
+	{/each}
+</ul>
