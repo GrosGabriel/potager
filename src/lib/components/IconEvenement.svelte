@@ -37,6 +37,19 @@
 		<circle cx="8" cy="8" r="6" />
 		<line x1="5" y1="8" x2="11" y2="8" />
 	</svg>
+{:else if type === 'Température'}
+	<svg viewBox="0 0 16 16" fill="none" stroke="black" stroke-width="1.8" class="w-full h-full">
+		<path d="M8 2V10" />
+		<circle cx="8" cy="12" r="2" />
+	</svg>
+{:else if type === 'Supprimer'}
+	<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" class="w-full h-full">
+		<path d="M3 4.5H13" />
+		<path d="M5.5 4.5V3C5.5 2.4 6 2 6.5 2H9.5C10 2 10.5 2.4 10.5 3V4.5" />
+		<path d="M4.5 4.5L5 13C5 13.6 5.5 14 6 14H10C10.5 14 11 13.6 11 13L11.5 4.5" />
+		<path d="M6.5 7V11" />
+		<path d="M9.5 7V11" />
+	</svg>
 {:else}
 	<svg viewBox="0 0 16 16" fill="black" class="w-full h-full">
 		<circle cx="8" cy="8" r="2.4" />

@@ -5,6 +5,7 @@ use db::Evenement;
 use db::EvenementAvecCulture;
 use db::Image;
 use db::EvenementAvecCultureEtImages;
+use db::NombreEvenementsParType;
 
 #[tauri::command]
 fn ajouter_culture_cmd(nom: String, variete: Option<String>, couleur: String) -> Result<(), String> {
@@ -12,8 +13,13 @@ fn ajouter_culture_cmd(nom: String, variete: Option<String>, couleur: String) ->
 }
 
 #[tauri::command]
-fn ajouter_evenement_cmd(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>) -> Result<i32, String> {
-    db::ajouter_evenement(culture_id, type_event, date, notes).map_err(|e| e.to_string())
+fn ajouter_evenement_cmd(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>, temperature_int: Option<f32>, temperature_ext: Option<f32>, temps_arrosage: Option<i32>) -> Result<i32, String> {
+    db::ajouter_evenement(culture_id, type_event, date, notes, temperature_int, temperature_ext, temps_arrosage).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn ajouter_evenement_avec_repetition_cmd(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>, temperature_int: Option<f32>, temperature_ext: Option<f32>, temps_arrosage: Option<i32>, nombre_jours: i32) -> Result<i32, String> {
+    db::ajouter_evenement_avec_repetition(culture_id, type_event, date, notes, temperature_int, temperature_ext, temps_arrosage, nombre_jours).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -56,6 +62,26 @@ fn lister_evenements_par_date_avec_culture_et_images_cmd(date: String) -> Result
     db::lister_evenements_par_date_avec_culture_et_images(date).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn supprimer_evenement_cmd(evenement_id: i32) -> Result<(), String> {
+    db::supprimer_evenement(evenement_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn supprimer_culture_cmd(culture_id: i32) -> Result<(), String> {
+    db::supprimer_culture(culture_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn nombre_evenements_par_type_cmd() -> Result<NombreEvenementsParType, String> {
+    db::nombre_evenements_par_type().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn nombre_images_cmd() -> Result<i32, String> {
+    db::nombre_images().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -63,14 +89,19 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
         ajouter_culture_cmd, 
         lister_cultures_cmd, 
-        ajouter_evenement_cmd, 
-        ajouter_image_cmd, 
+        ajouter_evenement_cmd,
+        ajouter_evenement_avec_repetition_cmd,
+        ajouter_image_cmd,
         lister_evenements_cmd, 
         lister_evenements_par_culture_cmd, 
         lister_evenements_par_date_cmd, 
         lister_evenements_avec_culture_cmd, 
         lister_images_par_evenement_cmd, 
-        lister_evenements_par_date_avec_culture_et_images_cmd
+        lister_evenements_par_date_avec_culture_et_images_cmd,
+        supprimer_evenement_cmd,
+        supprimer_culture_cmd,
+        nombre_evenements_par_type_cmd,
+        nombre_images_cmd
         ])
     .setup(|app| {
       if cfg!(debug_assertions) {

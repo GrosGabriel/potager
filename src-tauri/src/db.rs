@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use chrono::{Duration, NaiveDate};
 
 #[derive(Serialize, Deserialize)]
 pub struct Culture {
@@ -16,10 +17,13 @@ pub struct Culture {
 #[derive(Serialize, Deserialize)]
 pub struct Evenement {
     pub id: i32,
-    pub culture_id: i32,
+    pub culture_id: Option<i32>,
     pub type_evenement: String,
     pub date: String,
     pub notes: Option<String>,
+    pub temperature_int: Option<f32>,
+    pub temperature_ext: Option<f32>,
+    pub temps_arrosage: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -36,6 +40,9 @@ pub struct EvenementAvecCulture {
     pub type_evenement: String,
     pub date: String,
     pub notes: Option<String>,
+    pub temperature_int: Option<f32>,
+    pub temperature_ext: Option<f32>,
+    pub temps_arrosage: Option<i32>,
     pub culture_nom: Option<String>,
     pub culture_variete: Option<String>,
     pub culture_couleur: Option<String>,
@@ -48,6 +55,9 @@ pub struct EvenementAvecCultureEtImages {
     pub type_evenement: String,
     pub date: String,
     pub notes: Option<String>,
+    pub temperature_int: Option<f32>,
+    pub temperature_ext: Option<f32>,
+    pub temps_arrosage: Option<i32>,
     pub culture_nom: Option<String>,
     pub culture_variete: Option<String>,
     pub culture_couleur: Option<String>,
@@ -75,7 +85,7 @@ pub fn get_connection() -> Result<Connection> {
                 nom TEXT NOT NULL,
                 variete TEXT,
                 couleur TEXT
-            )", // couleur à faire rentrer dans une range: pour afficher la culture plantée sur le calendrier
+            )", 
             (),
         )?;
         tx.execute(
@@ -90,7 +100,10 @@ pub fn get_connection() -> Result<Connection> {
                 culture_id INTEGER REFERENCES cultures(id),
                 type_evenement TEXT NOT NULL,
                 date TEXT NOT NULL,
-                notes TEXT
+                notes TEXT,
+                temperature_int REAL,
+                temperature_ext REAL,
+                temps_arrosage INTEGER
             )",
             (),
         )?;
@@ -125,13 +138,50 @@ pub fn ajouter_culture(nom: String, variete: Option<String>, couleur: String) ->
     Ok(())
 }
 
-pub fn ajouter_evenement(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>) -> Result<i32> {
+pub fn ajouter_evenement(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>, temperature_int: Option<f32>, temperature_ext: Option<f32>, temps_arrosage: Option<i32>) -> Result<i32> {
     let conn = get_connection()?;
     conn.execute(
-        "INSERT INTO evenements (culture_id, type_evenement, date, notes) VALUES (?1, ?2, ?3, ?4)",
-        (&culture_id, &type_event, &date, &notes)
+        "INSERT INTO evenements (culture_id, type_evenement, date, notes, temperature_int, temperature_ext, temps_arrosage) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        (&culture_id, &type_event, &date, &notes, &temperature_int, &temperature_ext, &temps_arrosage)
     )?;
     Ok(conn.last_insert_rowid() as i32)
+}
+
+/// Crée le premier événement (avec ses notes/températures) puis, dans la
+/// même transaction, un événement nu par jour suivant jusqu'à `nombre_jours`
+/// jours au total (premier jour inclus). Si une insertion échoue en cours de
+/// route, rien n'est validé : la transaction est abandonnée (rollback
+/// automatique tant que `commit()` n'a pas été appelé).
+pub fn ajouter_evenement_avec_repetition(
+    culture_id: Option<i32>,
+    type_event: String,
+    date: String,
+    notes: Option<String>,
+    temperature_int: Option<f32>,
+    temperature_ext: Option<f32>,
+    temps_arrosage: Option<i32>,
+    nombre_jours: i32,
+) -> Result<i32> {
+    let mut conn = get_connection()?;
+    let tx = conn.transaction()?;
+
+    tx.execute(
+        "INSERT INTO evenements (culture_id, type_evenement, date, notes, temperature_int, temperature_ext, temps_arrosage) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        (&culture_id, &type_event, &date, &notes, &temperature_int, &temperature_ext, &temps_arrosage)
+    )?;
+    let premier_id = tx.last_insert_rowid() as i32;
+
+    let date_depart = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(erreur_io)?;
+    for i in 1..nombre_jours {
+        let date_suivante = (date_depart + Duration::days(i as i64)).format("%Y-%m-%d").to_string();
+        tx.execute(
+            "INSERT INTO evenements (culture_id, type_evenement, date, temps_arrosage) VALUES (?1, ?2, ?3, ?4)",
+            (&culture_id, &type_event, &date_suivante, &temps_arrosage)
+        )?;
+    }
+
+    tx.commit()?;
+    Ok(premier_id)
 }
 
 /// Dossier où sont copiées les images, à côté de potager.db (résolu depuis le
@@ -175,6 +225,50 @@ pub fn ajouter_image(evenement_id: i32, nom_fichier: String, donnees_base64: Str
 }
 
 
+#[derive(Serialize, Deserialize)]
+pub struct NombreEvenementsParType {
+    pub journal: i32,
+    pub arrosage: i32,
+    pub recolte: i32,
+    pub plantation: i32,
+    pub semis: i32,
+    pub retrait: i32,
+    pub temperature: i32,
+}
+
+pub fn nombre_evenements_par_type() -> Result<NombreEvenementsParType> {
+    let conn = get_connection()?;
+    let mut stmt = conn.prepare("SELECT type_evenement, COUNT(*) FROM evenements GROUP BY type_evenement")?;
+    let mut compteurs = NombreEvenementsParType {
+        journal: 0,
+        arrosage: 0,
+        recolte: 0,
+        plantation: 0,
+        semis: 0,
+        retrait: 0,
+        temperature: 0,
+    };
+    let lignes = stmt.query_map((), |row| {
+        let type_evenement: String = row.get(0)?;
+        let nombre: i32 = row.get(1)?;
+        Ok((type_evenement, nombre))
+    })?;
+    for ligne in lignes {
+        let (type_evenement, nombre) = ligne?;
+        match type_evenement.as_str() {
+            "Journal" => compteurs.journal = nombre,
+            "Arrosage" => compteurs.arrosage = nombre,
+            "Récolte" => compteurs.recolte = nombre,
+            "Plantation" => compteurs.plantation = nombre,
+            "Semis" => compteurs.semis = nombre,
+            "Retrait" => compteurs.retrait = nombre,
+            "Température" => compteurs.temperature = nombre,
+            _ => {}
+        }
+    }
+    Ok(compteurs)
+}
+
 pub fn lister_cultures() -> Result<Vec<Culture>> {
     let conn = get_connection()?;
     let mut stmt = conn.prepare("SELECT id, nom, variete, couleur FROM cultures")?;
@@ -194,7 +288,7 @@ pub fn lister_cultures() -> Result<Vec<Culture>> {
 
 pub fn lister_evenements() -> Result<Vec<Evenement>> {
     let conn = get_connection()?;
-    let mut stmt = conn.prepare("SELECT id, culture_id, type_evenement, date, notes FROM evenements")?;
+    let mut stmt = conn.prepare("SELECT id, culture_id, type_evenement, date, notes, temperature_int, temperature_ext, temps_arrosage FROM evenements")?;
     let evenements = stmt
         .query_map((), |row| {
             Ok(Evenement {
@@ -203,6 +297,9 @@ pub fn lister_evenements() -> Result<Vec<Evenement>> {
                 type_evenement: row.get(2)?,
                 date: row.get(3)?,
                 notes: row.get(4)?,
+                temperature_int: row.get(5)?,
+                temperature_ext: row.get(6)?,
+                temps_arrosage: row.get(7)?,
             })
         })?
         .filter_map(|e| e.ok())
@@ -212,7 +309,7 @@ pub fn lister_evenements() -> Result<Vec<Evenement>> {
 
 pub fn lister_evenements_par_culture(culture_id: i32) -> Result<Vec<Evenement>> {
     let conn = get_connection()?;
-    let mut stmt = conn.prepare("SELECT id, culture_id, type_evenement, date, notes FROM evenements WHERE culture_id = ?1")?;
+    let mut stmt = conn.prepare("SELECT id, culture_id, type_evenement, date, notes, temperature_int, temperature_ext, temps_arrosage FROM evenements WHERE culture_id = ?1")?;
     let evenements = stmt
         .query_map((&culture_id,), |row| {
             Ok(Evenement {
@@ -221,6 +318,9 @@ pub fn lister_evenements_par_culture(culture_id: i32) -> Result<Vec<Evenement>> 
                 type_evenement: row.get(2)?,
                 date: row.get(3)?,
                 notes: row.get(4)?,
+                temperature_int: row.get(5)?,
+                temperature_ext: row.get(6)?,
+                temps_arrosage: row.get(7)?,
             })
         })?
         .filter_map(|e| e.ok())
@@ -232,7 +332,7 @@ pub fn lister_evenements_par_date(date: String) -> Result<Vec<EvenementAvecCultu
     let conn = get_connection()?;
     let mut stmt = conn.prepare(
         "SELECT
-        e.id, e.culture_id, e.type_evenement, e.date, e.notes, c.nom, c.variete, c.couleur
+        e.id, e.culture_id, e.type_evenement, e.date, e.notes, e.temperature_int, e.temperature_ext, e.temps_arrosage, c.nom, c.variete, c.couleur
 
         FROM evenements AS e LEFT JOIN cultures AS c ON e.culture_id = c.id
 
@@ -247,9 +347,12 @@ pub fn lister_evenements_par_date(date: String) -> Result<Vec<EvenementAvecCultu
                 type_evenement: row.get(2)?,
                 date: row.get(3)?,
                 notes: row.get(4)?,
-                culture_nom: row.get(5)?,
-                culture_variete: row.get(6)?,
-                culture_couleur: row.get(7)?,
+                temperature_int: row.get(5)?,
+                temperature_ext: row.get(6)?,
+                temps_arrosage: row.get(7)?,
+                culture_nom: row.get(8)?,
+                culture_variete: row.get(9)?,
+                culture_couleur: row.get(10)?,
             })
         })?
         .filter_map(|e| e.ok())
@@ -261,7 +364,7 @@ pub fn lister_evenements_avec_culture() -> Result<Vec<EvenementAvecCulture>> {
     let conn = get_connection()?;
     let mut stmt = conn.prepare(
         "SELECT
-        e.id, e.culture_id, e.type_evenement, e.date, e.notes, c.nom, c.variete, c.couleur
+        e.id, e.culture_id, e.type_evenement, e.date, e.notes, e.temperature_int, e.temperature_ext, e.temps_arrosage, c.nom, c.variete, c.couleur
 
         FROM evenements AS e LEFT JOIN cultures AS c ON e.culture_id = c.id"
 
@@ -274,9 +377,12 @@ pub fn lister_evenements_avec_culture() -> Result<Vec<EvenementAvecCulture>> {
                 type_evenement: row.get(2)?,
                 date: row.get(3)?,
                 notes: row.get(4)?,
-                culture_nom: row.get(5)?,
-                culture_variete: row.get(6)?,
-                culture_couleur: row.get(7)?,
+                temperature_int: row.get(5)?,
+                temperature_ext: row.get(6)?,
+                temps_arrosage: row.get(7)?,
+                culture_nom: row.get(8)?,
+                culture_variete: row.get(9)?,
+                culture_couleur: row.get(10)?,
             })
         })?
         .filter_map(|e| e.ok())
@@ -305,11 +411,13 @@ pub fn lister_evenements_par_date_avec_culture_et_images(date: String) -> Result
     let conn = get_connection()?;
     let mut stmt = conn.prepare(
         "SELECT
-        e.id, e.culture_id, e.type_evenement, e.date, e.notes, c.nom, c.variete, c.couleur
+        e.id, e.culture_id, e.type_evenement, e.date, e.notes, e.temperature_int, e.temperature_ext, e.temps_arrosage, c.nom, c.variete, c.couleur
 
         FROM evenements AS e LEFT JOIN cultures AS c ON e.culture_id = c.id
 
-        WHERE e.date = ?1"
+        WHERE e.date = ?1
+
+        ORDER BY e.id ASC"
 
     )?;
     let evenements = stmt
@@ -320,9 +428,12 @@ pub fn lister_evenements_par_date_avec_culture_et_images(date: String) -> Result
                 type_evenement: row.get(2)?,
                 date: row.get(3)?,
                 notes: row.get(4)?,
-                culture_nom: row.get(5)?,
-                culture_variete: row.get(6)?,
-                culture_couleur: row.get(7)?,
+                temperature_int: row.get(5)?,
+                temperature_ext: row.get(6)?,
+                temps_arrosage: row.get(7)?,
+                culture_nom: row.get(8)?,
+                culture_variete: row.get(9)?,
+                culture_couleur: row.get(10)?,
                 images: lister_images_par_evenement(row.get(0)?)?,
             })
         })?
@@ -330,3 +441,34 @@ pub fn lister_evenements_par_date_avec_culture_et_images(date: String) -> Result
         .collect();
     Ok(evenements)
 }   
+
+pub fn supprimer_evenement(evenement_id: i32) -> Result<()> {
+    // Supprimer d'abord les fichiers images copiés sur disque, avant les
+    // lignes en base qui gardent trace de leur chemin.
+    for image in lister_images_par_evenement(evenement_id)? {
+        let _ = fs::remove_file(&image.chemin_fichier);
+    }
+
+    let conn = get_connection()?;
+    conn.execute("DELETE FROM images WHERE evenement_id = ?1", (&evenement_id,))?;
+    conn.execute("DELETE FROM evenements WHERE id = ?1", (&evenement_id,))?;
+    Ok(())
+}
+
+pub fn supprimer_culture(culture_id: i32) -> Result<()> {
+    let conn = get_connection()?;
+    // Supprimer d'abord les événements liés à cette culture, et leurs images.
+    for evenement in lister_evenements_par_culture(culture_id)? {
+        supprimer_evenement(evenement.id)?;
+    }
+    conn.execute("DELETE FROM cultures WHERE id = ?1", (&culture_id,))?;
+    Ok(())
+}
+
+
+pub fn nombre_images() -> Result<i32> {
+    let conn = get_connection()?;
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM images")?;
+    let nombre: i32 = stmt.query_row((), |row| row.get(0))?;
+    Ok(nombre)
+}

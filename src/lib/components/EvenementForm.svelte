@@ -38,6 +38,11 @@
 	}
 
 	let cultures = $state([]);
+	let culturesTriees = $derived(
+		[...cultures].sort((a, b) =>
+			`${a.nom} ${a.variete ?? ''}`.localeCompare(`${b.nom} ${b.variete ?? ''}`, 'fr')
+		)
+	);
 	let chargementCultures = $state(true);
 	let erreurCultures = $state('');
 
@@ -45,6 +50,11 @@
 	let typeEvenement = $state(typesEvenement[0]);
 	let dateTexte = $derived(isoVersAffichage(dateVersISO(date)));
 	let notes = $state('');
+	let temperatureInt = $state(null);
+	let temperatureExt = $state(null);
+	let tempsArrosage = $state(null);
+	let arrosageAutomatique = $state(false);
+	let periodeArrosage = $state(null);
 
     let newCultureNom = $state('');
     let newCultureVariete = $state('');
@@ -82,6 +92,7 @@
 	}
 
 
+
 	let dateEvenementISO = $derived(affichageVersISO(dateTexte));
 	let dateInvalide = $derived(dateTexte.trim() !== '' && dateEvenementISO === null);
 
@@ -95,14 +106,14 @@
 			})
 			.catch((error) => {
 				console.error('Erreur lors de la récupération des cultures :', error);
-				erreurCultures = "Impossible de charger les cultures.";
+				erreurCultures = "Impossible de charger les cultures." + error;
 			})
 			.finally(() => {
 				chargementCultures = false;
 			});
 	});
 
-	let formValide = $derived((cultureId !== '' || typeEvenement == "Journal") && typeEvenement !== '' && dateEvenementISO !== null);
+	let formValide = $derived((cultureId !== '' || typeEvenement == "Journal" || typeEvenement == "Température" ) && typeEvenement !== '' && dateEvenementISO !== null);
 
 	async function soumettre(event) {
 		event.preventDefault();
@@ -113,7 +124,7 @@
 
 		try {
 			
-            if (typeEvenement !== "Journal" && cultureId === "new_culture") {
+            if (typeEvenement !== "Journal" && typeEvenement !== "Température" && cultureId === "new_culture") {
                 await invoke('ajouter_culture_cmd', {
                     nom: newCultureNom.trim(),
                     variete: newCultureVariete.trim() === '' ? null : newCultureVariete.trim(),
@@ -129,13 +140,27 @@
                     throw new Error("Impossible de récupérer l'ID de la nouvelle culture.");
                 }
             };
-            
-            const evenementId = await invoke('ajouter_evenement_cmd', {
-				cultureId: typeEvenement === "Journal" ? null : Number(cultureId),
+
+            const parametresEvenement = {
+				cultureId: typeEvenement === "Journal" || typeEvenement === "Température" ? null : Number(cultureId),
 				typeEvent: typeEvenement,
 				date: dateEvenementISO,
-				notes: notes.trim() === '' ? null : notes.trim()
-			});
+				notes: notes.trim() === '' ? null : notes.trim(),
+				temperatureInt: temperatureInt !== null ? Number(temperatureInt) : null,
+				temperatureExt: temperatureExt !== null ? Number(temperatureExt) : null,
+				tempsArrosage: tempsArrosage !== null ? Number(tempsArrosage) : null,
+			};
+
+			// Arrosage automatique : le premier jour et tous les jours suivants
+			// sont créés en une seule transaction côté Rust (voir
+			// ajouter_evenement_avec_repetition) : soit tout est enregistré,
+			// soit rien ne l'est en cas d'erreur en cours de route.
+			const repeterArrosage =
+				typeEvenement === "Arrosage" && arrosageAutomatique && periodeArrosage !== null && periodeArrosage > 0;
+
+			const evenementId = repeterArrosage
+				? await invoke('ajouter_evenement_avec_repetition_cmd', { ...parametresEvenement, nombreJours: periodeArrosage })
+				: await invoke('ajouter_evenement_cmd', parametresEvenement);
 
 			for (const fichier of imagesSelectionnees) {
 				const donnees = await lireFichierEnDataURL(fichier);
@@ -145,8 +170,11 @@
 					donnees
 				});
 			}
-			imagesSelectionnees = [];
 
+			imagesSelectionnees = [];
+			notes = '';
+			typeEvenement = typesEvenement[0];
+			cultureId = '';
 			onsuccess();
 		} catch (error) {
 			console.error("Erreur lors de l'ajout de l'événement :", error);
@@ -155,6 +183,21 @@
 			envoiEnCours = false;
 		}
 	}
+
+$effect(() => {
+	if (typeEvenement === "Journal" || typeEvenement === "Température") {
+		cultureId = '';
+		newCultureNom = '';
+		newCultureVariete = '';
+		newCultureCouleur = '#00ff00';
+	}
+	if (typeEvenement !== "Arrosage") {
+		tempsArrosage = null;
+		arrosageAutomatique = false;
+		periodeArrosage = null;
+	}
+})
+
 </script>
 
 <form onsubmit={soumettre}>
@@ -185,11 +228,11 @@
 		{/if}
 	</div>
 
-    {#if typeEvenement !== "Journal"}
+    {#if typeEvenement !== "Journal" && typeEvenement !== "Température"}
         <div>
             <label for="culture">Culture</label>
             <select id="culture" bind:value={cultureId} required>
-                {#each cultures as culture}
+                {#each culturesTriees as culture}
                     <option value={String(culture.id)}>
                         {culture.nom}{culture.variete ? ` (${culture.variete})` : ''}
                     </option>
@@ -210,7 +253,7 @@
             </div>
 
             <div>
-                <label for="new_culture_variete">Variété (optionnel)</label>
+                <label for="new_culture_variete">Variété</label>
                 <input
                     id="new_culture_variete"
                     type="text"
@@ -232,8 +275,68 @@
 
     {/if}
 
+	{#if typeEvenement === "Température"}
+		<div>
+			<label for="temperature_int">Température intérieure (°C)</label>
+			<input
+				id="temperature_int"
+				type="number"
+				step="0.1"
+				bind:value={temperatureInt}
+				required
+			/>
+		</div>
+		<div>
+			<label for="temperature_ext">Température extérieure (°C)</label>
+			<input
+				id="temperature_ext"
+				type="number"
+				step="0.1"
+				bind:value={temperatureExt}
+				required
+			/>
+		</div>
+	{/if}
+
+	{#if typeEvenement === "Arrosage"}
+		<div>
+			<label for="arrosage_automatique">Arrosage automatique</label>
+			<input
+				id="arrosage_automatique"
+				type="checkbox"
+				bind:checked={arrosageAutomatique}
+			/>
+		</div>
+		{#if arrosageAutomatique}
+			<div>
+				<label for="période_arrosage">Répéter l'arrosage (jours)</label> 
+				<!--Il faudrait un selecteur pour choisir plusieurs jours d'arrosages autour de la date choisie-->
+				<input
+					id="période_arrosage"
+					type="number"
+					step="1"
+					min="2"
+					bind:value={periodeArrosage}
+					required
+				/>
+			</div>
+		{/if}
+		<div>
+			<label for="temps_arrosage">Durée d'arrosage (minutes)</label>
+			<input
+				id="temps_arrosage"
+				type="number"
+				step="1"
+				min="1"
+				bind:value={tempsArrosage}
+				required
+			/>
+		</div>
+	{/if}
+
+
     <div>
-        <label for="notes">Notes (optionnel)</label>
+        <label for="notes">Notes</label>
         <textarea
             id="notes"
             bind:value={notes}
@@ -243,7 +346,7 @@
     </div>
 
     <div>
-        <label for="images">Photos (optionnel)</label>
+        <label for="images">Photos</label>
         <input
             id="images"
             type="file"

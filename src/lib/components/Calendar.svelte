@@ -1,6 +1,6 @@
 <script>
 	import IconEvenement from './IconEvenement.svelte';
-	import { couleurEvenement, COULEUR_PAR_TYPE, COULEUR_CULTURE_PAR_DEFAUT } from '$lib/evenementsColor.js';
+	import { couleurEvenement, COULEUR_PAR_TYPE, COULEUR_CULTURE_PAR_DEFAUT, ANNEES} from '$lib/evenementsColor.js';
 
 	let { selected = $bindable(null), evenements = [] } = $props();
 
@@ -40,9 +40,6 @@
 		'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
 		'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 	];
-
-	const anneeCourante = new Date().getFullYear();
-	const annees = Array.from({ length: 101 }, (_, i) => anneeCourante - 50 + i);
 
 	function estMemeJour(a, b) {
 		return (
@@ -108,12 +105,13 @@
 	}
 
 	const legende = [
-		{ type: 'Semis', couleur: COULEUR_CULTURE_PAR_DEFAUT, note: '(couleur de la culture)' },
-		{ type: 'Plantation', couleur: COULEUR_CULTURE_PAR_DEFAUT, note: '(couleur de la culture)' },
-		{ type: 'Récolte', couleur: COULEUR_CULTURE_PAR_DEFAUT, note: '(couleur de la culture)' },
+		{ type: 'Semis', couleur: COULEUR_CULTURE_PAR_DEFAUT },
+		{ type: 'Plantation', couleur: COULEUR_CULTURE_PAR_DEFAUT },
+		{ type: 'Récolte', couleur: COULEUR_CULTURE_PAR_DEFAUT },
 		{ type: 'Arrosage', couleur: COULEUR_PAR_TYPE.Arrosage },
 		{ type: 'Journal', couleur: COULEUR_PAR_TYPE.Journal },
-		{ type: 'Retrait', couleur: COULEUR_PAR_TYPE.Retrait }
+		{ type: 'Retrait', couleur: COULEUR_PAR_TYPE.Retrait },
+		{ type: 'Température', couleur: COULEUR_PAR_TYPE.Température }
 	];
 </script>
 
@@ -134,7 +132,7 @@
 				{/each}
 			</select>
 			<select bind:value={anneeAffichee} class="text-base font-medium rounded border-gray-200 py-1">
-				{#each annees as annee}
+				{#each ANNEES as annee}
 					<option value={annee}>{annee}</option>
 				{/each}
 			</select>
@@ -215,7 +213,7 @@
 						<IconEvenement type={item.type} />
 					</span>
 				</span>
-				{item.type} {item.note ?? ''}
+				{item.type}
 			</span>
 		{/each}
 	</div>
