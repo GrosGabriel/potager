@@ -42,6 +42,21 @@
 		<path d="M8 2V10" />
 		<circle cx="8" cy="12" r="2" />
 	</svg>
+{:else if type === 'Floraison'}
+	<svg viewBox="0 0 16 16" fill="none" stroke="black" stroke-width="1.3" class="w-full h-full">
+		<circle cx="8" cy="4" r="2" />
+		<circle cx="11.3" cy="6.2" r="2" />
+		<circle cx="10.1" cy="10.2" r="2" />
+		<circle cx="5.9" cy="10.2" r="2" />
+		<circle cx="4.7" cy="6.2" r="2" />
+		<circle cx="8" cy="7.4" r="1.3" fill="black" stroke="none" />
+	</svg>
+{:else if type === 'Photos'}
+	<svg viewBox="0 0 16 16" fill="none" stroke="black" stroke-width="1.4" class="w-full h-full">
+		<path d="M5.5 4.25L6.5 2.75H9.5L10.5 4.25" />
+		<rect x="2" y="4.25" width="12" height="9" rx="1.5" />
+		<circle cx="8" cy="8.75" r="2.3" />
+	</svg>
 {:else if type === 'Supprimer'}
 	<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" class="w-full h-full">
 		<path d="M3 4.5H13" />

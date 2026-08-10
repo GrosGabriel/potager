@@ -64,6 +64,19 @@ pub struct EvenementAvecCultureEtImages {
     pub images: Vec<Image>,
 }
 
+
+#[derive(Serialize, Deserialize)]
+pub struct NombreEvenementsParType {
+    pub journal: i32,
+    pub arrosage: i32,
+    pub recolte: i32,
+    pub plantation: i32,
+    pub semis: i32,
+    pub retrait: i32,
+    pub temperature: i32,
+    pub floraison: i32,
+}
+
 pub fn get_connection() -> Result<Connection> {
     let mut conn = Connection::open("potager.db")?;
     let tx = conn.transaction()?;
@@ -225,16 +238,6 @@ pub fn ajouter_image(evenement_id: i32, nom_fichier: String, donnees_base64: Str
 }
 
 
-#[derive(Serialize, Deserialize)]
-pub struct NombreEvenementsParType {
-    pub journal: i32,
-    pub arrosage: i32,
-    pub recolte: i32,
-    pub plantation: i32,
-    pub semis: i32,
-    pub retrait: i32,
-    pub temperature: i32,
-}
 
 pub fn nombre_evenements_par_type() -> Result<NombreEvenementsParType> {
     let conn = get_connection()?;
@@ -247,6 +250,7 @@ pub fn nombre_evenements_par_type() -> Result<NombreEvenementsParType> {
         semis: 0,
         retrait: 0,
         temperature: 0,
+        floraison: 0
     };
     let lignes = stmt.query_map((), |row| {
         let type_evenement: String = row.get(0)?;
@@ -263,6 +267,7 @@ pub fn nombre_evenements_par_type() -> Result<NombreEvenementsParType> {
             "Semis" => compteurs.semis = nombre,
             "Retrait" => compteurs.retrait = nombre,
             "Température" => compteurs.temperature = nombre,
+            "Floraison" => compteurs.floraison = nombre,
             _ => {}
         }
     }
@@ -395,6 +400,25 @@ pub fn lister_images_par_evenement(evenement_id: i32) -> Result<Vec<Image>> {
     let mut stmt = conn.prepare("SELECT id, evenement_id, chemin_fichier FROM images WHERE evenement_id = ?1")?;
     let images = stmt
         .query_map((&evenement_id,), |row| {
+            Ok(Image {
+                id: row.get(0)?,
+                evenement_id: row.get(1)?,
+                chemin_fichier: row.get(2)?,
+            })
+        })?
+        .filter_map(|i| i.ok())
+        .collect();
+    Ok(images)
+}
+
+// Toutes les images, tous événements confondus : utilisé pour filtrer le
+// nombre de photos par période côté frontend (jointure avec la date de
+// l'événement associé, qui n'est pas stockée sur l'image elle-même).
+pub fn lister_images() -> Result<Vec<Image>> {
+    let conn = get_connection()?;
+    let mut stmt = conn.prepare("SELECT id, evenement_id, chemin_fichier FROM images")?;
+    let images = stmt
+        .query_map((), |row| {
             Ok(Image {
                 id: row.get(0)?,
                 evenement_id: row.get(1)?,

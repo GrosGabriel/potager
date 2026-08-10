@@ -17,8 +17,8 @@ let { checked = $bindable(false) } = $props();
   .switch {
     position: relative;
     display: inline-block;
-    width: 46px;
-    height: 24px;
+    width: 68px;
+    height: 36px;
   }
 
   .switch input {
@@ -33,16 +33,16 @@ let { checked = $bindable(false) } = $props();
     inset: 0;
     background-color: #ccc;
     transition: 0.3s;
-    border-radius: 24px;
+    border-radius: 36px;
   }
 
   .slider::before {
     content: "";
     position: absolute;
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
+    height: 28px;
+    width: 28px;
+    left: 4px;
+    bottom: 4px;
     background-color: white;
     transition: 0.3s;
     border-radius: 50%;
@@ -53,6 +53,6 @@ let { checked = $bindable(false) } = $props();
   }
 
   input:checked + .slider::before {
-    transform: translateX(22px);
+    transform: translateX(32px);
   }
 </style>

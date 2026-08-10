@@ -1,5 +1,5 @@
 <script>
-	import { COULEUR_PAR_TYPE } from '$lib/evenementsColor.js';
+	import { COULEUR_PAR_TYPE } from '$lib/utils.js';
 
 	let { evenements = [], anneeMin = null, anneeMax = null, moisSelectionnes = [], enChargement = false } = $props();
 
@@ -30,31 +30,31 @@
 
 	let evenementsFiltres = $derived(evenements.filter((e) => dansPeriode(e.date)));
 
-	// Moyenne, par mois, des relevés intérieurs et extérieurs.
-	let moyennesParMois = $derived.by(() => {
-		const sommeInt = new Map();
-		const sommeExt = new Map();
-		const nombreInt = new Map();
-		const nombreExt = new Map();
+	// Min et max, par mois, des relevés intérieurs et extérieurs.
+	let statsParMois = $derived.by(() => {
+		const maxInt = new Map();
+		const minInt = new Map();
+		const maxExt = new Map();
+		const minExt = new Map();
 		for (const evenement of evenementsFiltres) {
 			const cle = cleMois(evenement.date);
 			if (evenement.temperature_int !== null && evenement.temperature_int !== undefined) {
-				sommeInt.set(cle, (sommeInt.get(cle) ?? 0) + evenement.temperature_int);
-				nombreInt.set(cle, (nombreInt.get(cle) ?? 0) + 1);
+				maxInt.set(cle, Math.max(maxInt.get(cle) ?? -Infinity, evenement.temperature_int));
+				minInt.set(cle, Math.min(minInt.get(cle) ?? Infinity, evenement.temperature_int));
 			}
 			if (evenement.temperature_ext !== null && evenement.temperature_ext !== undefined) {
-				sommeExt.set(cle, (sommeExt.get(cle) ?? 0) + evenement.temperature_ext);
-				nombreExt.set(cle, (nombreExt.get(cle) ?? 0) + 1);
+				maxExt.set(cle, Math.max(maxExt.get(cle) ?? -Infinity, evenement.temperature_ext));
+				minExt.set(cle, Math.min(minExt.get(cle) ?? Infinity, evenement.temperature_ext));
 			}
 		}
-		const moyInt = new Map([...sommeInt].map(([cle, somme]) => [cle, somme / nombreInt.get(cle)]));
-		const moyExt = new Map([...sommeExt].map(([cle, somme]) => [cle, somme / nombreExt.get(cle)]));
-		return { moyInt, moyExt };
+		return { maxInt, minInt, maxExt, minExt };
 	});
 
 	let series = $derived([
-		{ label: 'Intérieure', couleur: COULEUR_INTERIEURE, valeurs: moyennesParMois.moyInt },
-		{ label: 'Extérieure', couleur: COULEUR_EXTERIEURE, valeurs: moyennesParMois.moyExt }
+		{ label: 'Intérieure max', couleur: COULEUR_INTERIEURE, pointille: false, valeurs: statsParMois.maxInt },
+		{ label: 'Intérieure min', couleur: COULEUR_INTERIEURE, pointille: true, valeurs: statsParMois.minInt },
+		{ label: 'Extérieure max', couleur: COULEUR_EXTERIEURE, pointille: false, valeurs: statsParMois.maxExt },
+		{ label: 'Extérieure min', couleur: COULEUR_EXTERIEURE, pointille: true, valeurs: statsParMois.minExt }
 	]);
 
 	let moisAxe = $derived(
@@ -134,7 +134,7 @@
 				viewBox="0 0 {LARGEUR} {HAUTEUR}"
 				class="w-full h-auto"
 				role="img"
-				aria-label="Température moyenne intérieure et extérieure par mois"
+				aria-label="Températures minimale et maximale, intérieure et extérieure, par mois"
 			>
 				{#each ticksY as valeur}
 					<line
@@ -181,6 +181,7 @@
 						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
+						stroke-dasharray={serie.pointille ? '5,4' : undefined}
 					/>
 					{#each serie.points as p}
 						<circle cx={p.x} cy={p.y} r="4" fill={serie.couleur} stroke="white" stroke-width="2" />
@@ -201,35 +202,47 @@
 
 			{#if survolIndex !== null}
 				{@const pourcentGauche = (x(survolIndex) / LARGEUR) * 100}
+				{@const versLaGauche = pourcentGauche > 50}
 				<div
-					class="absolute top-2 -translate-x-1/2 bg-white border border-gray-200 rounded shadow-sm px-3 py-2 text-xs pointer-events-none"
-					style="left: {pourcentGauche}%"
+					class="absolute top-2 bg-white border border-gray-200 rounded shadow-sm px-4 py-3 pointer-events-none w-max max-w-[18rem] space-y-1"
+					style={versLaGauche ? `right: ${100 - pourcentGauche}%` : `left: ${pourcentGauche}%`}
 				>
-					<p class="font-medium text-gray-700 mb-1">{libelleMois(moisAxe[survolIndex])}</p>
+					<p class="font-medium text-lg text-gray-700 mb-1">{libelleMois(moisAxe[survolIndex])}</p>
 					{#each pointsParSerie as serie}
 						{@const point = serie.points.find((p) => p.mois === moisAxe[survolIndex])}
-						<div class="flex items-center gap-1.5">
-							<span class="inline-block w-3 h-0.5" style="background-color: {serie.couleur}"></span>
-							<span class="text-gray-500">{serie.label}</span>
-							<span class="font-semibold text-gray-800">{point ? `${point.valeur.toFixed(1)}°C` : '—'}</span>
+						<div class="flex items-center gap-2">
+							<span
+								class="inline-block w-4 shrink-0"
+								style="height: 0; border-top: 2px {serie.pointille ? 'dashed' : 'solid'} {serie.couleur};"
+							></span>
+							<span class="text-gray-500 text-lg">{serie.label}</span>
+							<span class="font-semibold text-lg text-gray-800">{point ? `${point.valeur.toFixed(1)}°C` : '—'}</span>
 						</div>
 					{/each}
 				</div>
 			{/if}
 		</div>
 
+		<!--Légende-->
 		<div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
 			{#each series as serie}
-				<span class="flex items-center gap-1.5 text-xs text-gray-600">
-					<span class="inline-block w-4 h-0.5" style="background-color: {serie.couleur}"></span>
+				<span class="flex items-center gap-1.5 text-md text-gray-600">
+					<span
+						class="inline-block w-8 "
+						style="
+							border-top: 4px {serie.pointille ? 'dashed' : 'solid'} {serie.couleur};
+						"
+					></span>
 					{serie.label}
 				</span>
 			{/each}
 		</div>
+		<!--<span class="inline-block w-4 h-1" style="background-color: {culture.couleur}"></span>
+						{culture.nom}{culture.variete ? ` (${culture.variete})` : ''}-->
 
 		<button
 			type="button"
-			class="text-xs text-green-700 hover:underline mt-3"
+			class="text-md text-green-700 hover:underline mt-3"
 			onclick={() => (afficherTableau = !afficherTableau)}
 		>
 			{afficherTableau ? 'Masquer' : 'Afficher'} les données en tableau
@@ -237,7 +250,7 @@
 
 		{#if afficherTableau}
 			<div class="overflow-x-auto mt-2">
-				<table class="text-xs w-full">
+				<table class="text-lg w-full">
 					<thead>
 						<tr>
 							<th class="text-left text-gray-500 font-medium pr-3 py-1">Mois</th>

@@ -15,7 +15,7 @@
 			<li>
 				<a
 					href={onglet.href}
-					class="inline-block px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+					class="inline-block px-4 py-3 text-xl font-medium border-b-2 transition-colors"
 					class:border-green-600={actif}
 					class:text-green-700={actif}
 					class:border-transparent={!actif}

@@ -26,11 +26,16 @@
 
 <style>
   dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
     border: none;
     border-radius: 16px;
     padding: 0;
     max-width: 90vw;
-    margin: auto;
+    max-height: 90vh;
     box-shadow: 0 8px 40px rgba(0,0,0,0.18);
   }
 

@@ -63,6 +63,11 @@ fn lister_evenements_par_date_avec_culture_et_images_cmd(date: String) -> Result
 }
 
 #[tauri::command]
+fn lister_images_cmd() -> Result<Vec<Image>, String> {
+    db::lister_images().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn supprimer_evenement_cmd(evenement_id: i32) -> Result<(), String> {
     db::supprimer_evenement(evenement_id).map_err(|e| e.to_string())
 }
@@ -96,8 +101,9 @@ pub fn run() {
         lister_evenements_par_culture_cmd, 
         lister_evenements_par_date_cmd, 
         lister_evenements_avec_culture_cmd, 
-        lister_images_par_evenement_cmd, 
+        lister_images_par_evenement_cmd,
         lister_evenements_par_date_avec_culture_et_images_cmd,
+        lister_images_cmd,
         supprimer_evenement_cmd,
         supprimer_culture_cmd,
         nombre_evenements_par_type_cmd,

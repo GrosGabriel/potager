@@ -1,6 +1,6 @@
 <script>
 	import IconEvenement from './IconEvenement.svelte';
-	import { couleurEvenement, COULEUR_PAR_TYPE, COULEUR_CULTURE_PAR_DEFAUT, ANNEES} from '$lib/evenementsColor.js';
+	import { couleurEvenement, COULEUR_PAR_TYPE, COULEUR_CULTURE_PAR_DEFAUT, ANNEES} from '$lib/utils.js';
 
 	let { selected = $bindable(null), evenements = [] } = $props();
 
@@ -108,6 +108,7 @@
 		{ type: 'Semis', couleur: COULEUR_CULTURE_PAR_DEFAUT },
 		{ type: 'Plantation', couleur: COULEUR_CULTURE_PAR_DEFAUT },
 		{ type: 'Récolte', couleur: COULEUR_CULTURE_PAR_DEFAUT },
+		{ type: 'Floraison', couleur: COULEUR_CULTURE_PAR_DEFAUT },
 		{ type: 'Arrosage', couleur: COULEUR_PAR_TYPE.Arrosage },
 		{ type: 'Journal', couleur: COULEUR_PAR_TYPE.Journal },
 		{ type: 'Retrait', couleur: COULEUR_PAR_TYPE.Retrait },

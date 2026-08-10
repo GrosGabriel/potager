@@ -1,6 +1,6 @@
 <script>
 	import { invoke } from '@tauri-apps/api/core';
-	import { TYPES_EVENEMENT as typesEvenement } from '$lib/evenementsColor.js';
+	import { TYPES_EVENEMENT as typesEvenement, libelleCulture } from '$lib/utils.js';
 
 	let { date = null, onsuccess = () => {}, oncancel = () => {} } = $props();
 
@@ -123,7 +123,7 @@
 		erreurEnvoi = '';
 
 		try {
-			
+
             if (typeEvenement !== "Journal" && typeEvenement !== "Température" && cultureId === "new_culture") {
                 await invoke('ajouter_culture_cmd', {
                     nom: newCultureNom.trim(),
@@ -200,74 +200,82 @@ $effect(() => {
 
 </script>
 
-<form onsubmit={soumettre}>
-    <h2>Ajouter un événement</h2>
+<form onsubmit={soumettre} class="w-[min(40rem,80vw)] max-h-[88vh] overflow-y-auto space-y-5 px-1">
+    <h2 class="text-xl font-semibold text-gray-800">Ajouter un événement</h2>
 
-    <div>
-        <label for="type_evenement">Type d'événement</label>
-        <select id="type_evenement" bind:value={typeEvenement} required>
-            {#each typesEvenement as type}
-                <option value={type}>{type}</option>
-            {/each}
-        </select>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label for="type_evenement" class="block text-base font-medium text-gray-700 mb-1">Type d'événement</label>
+            <select id="type_evenement" bind:value={typeEvenement} required class="w-full rounded border-gray-200 text-base py-2">
+                {#each typesEvenement as type}
+                    <option value={type}>{type}</option>
+                {/each}
+            </select>
+        </div>
+
+        <div>
+			<label for="date" class="block text-base font-medium text-gray-700 mb-1">Date</label>
+			<input
+				id="date"
+				type="text"
+				inputmode="numeric"
+				placeholder="JJ/MM/AAAA"
+				bind:value={dateTexte}
+				required
+				class="w-full rounded border-gray-200 text-base py-2"
+				class:border-red-400={dateInvalide}
+			/>
+			{#if dateInvalide}
+				<p class="text-sm text-red-600 mt-1">Format attendu : JJ/MM/AAAA</p>
+			{/if}
+		</div>
     </div>
 
-    <div>
-		<label for="date">Date</label>
-		<input
-			id="date"
-			type="text"
-			inputmode="numeric"
-			placeholder="JJ/MM/AAAA"
-			bind:value={dateTexte}
-			required
-			class:border-red-400={dateInvalide}
-		/>
-		{#if dateInvalide}
-			<p class="text-xs text-red-600 mt-1">Format attendu : JJ/MM/AAAA</p>
-		{/if}
-	</div>
-
     {#if typeEvenement !== "Journal" && typeEvenement !== "Température"}
-        <div>
-            <label for="culture">Culture</label>
-            <select id="culture" bind:value={cultureId} required>
+        <div class="flex justify-center">
+          <div class="w-fit">
+            <label for="culture" class="block text-base font-medium text-gray-700 mb-1">Culture</label>
+            <select id="culture" bind:value={cultureId} required class="rounded border-gray-200 text-base py-2">
                 {#each culturesTriees as culture}
                     <option value={String(culture.id)}>
-                        {culture.nom}{culture.variete ? ` (${culture.variete})` : ''}
+                        {libelleCulture(culture)}
                     </option>
                 {/each}
                 <option value={"new_culture"}>Ajouter une nouvelle culture</option>
             </select>
+          </div>
         </div>
 
         {#if cultureId === "new_culture"}
             <div>
-                <label for="new_culture_nom">Nom de la nouvelle culture</label>
+                <label for="new_culture_nom" class="block text-base font-medium text-gray-700 mb-1">Nom de la nouvelle culture</label>
                 <input
                     id="new_culture_nom"
                     type="text"
                     bind:value={newCultureNom}
                     required
+                    class="w-full rounded border-gray-200 text-base py-2"
                 />
             </div>
 
             <div>
-                <label for="new_culture_variete">Variété</label>
+                <label for="new_culture_variete" class="block text-base font-medium text-gray-700 mb-1">Variété</label>
                 <input
                     id="new_culture_variete"
                     type="text"
                     bind:value={newCultureVariete}
+                    class="w-full rounded border-gray-200 text-base py-2"
                 />
             </div>
 
             <div>
-                <label for="new_culture_couleur">Couleur</label>
+                <label for="new_culture_couleur" class="block text-base font-medium text-gray-700 mb-1">Couleur</label>
                 <input
                     id="new_culture_couleur"
                     type="color"
                     bind:value={newCultureCouleur}
                     required
+                    class="h-9 w-16 rounded border-gray-200"
                 />
             </div>
 
@@ -276,53 +284,61 @@ $effect(() => {
     {/if}
 
 	{#if typeEvenement === "Température"}
-		<div>
-			<label for="temperature_int">Température intérieure (°C)</label>
-			<input
-				id="temperature_int"
-				type="number"
-				step="0.1"
-				bind:value={temperatureInt}
-				required
-			/>
-		</div>
-		<div>
-			<label for="temperature_ext">Température extérieure (°C)</label>
-			<input
-				id="temperature_ext"
-				type="number"
-				step="0.1"
-				bind:value={temperatureExt}
-				required
-			/>
+		<div class="grid grid-cols-2 gap-4">
+			<div>
+				<label for="temperature_int" class="block text-base font-medium text-gray-700 mb-1">Température intérieure (°C)</label>
+				<input
+					id="temperature_int"
+					type="number"
+					step="0.1"
+					bind:value={temperatureInt}
+					required
+					class="w-full rounded border-gray-200 text-base py-2"
+				/>
+			</div>
+			<div>
+				<label for="temperature_ext" class="block text-base font-medium text-gray-700 mb-1">Température extérieure (°C)</label>
+				<input
+					id="temperature_ext"
+					type="number"
+					step="0.1"
+					bind:value={temperatureExt}
+					required
+					class="w-full rounded border-gray-200 text-base py-2"
+				/>
+			</div>
 		</div>
 	{/if}
 
 	{#if typeEvenement === "Arrosage"}
-		<div>
-			<label for="arrosage_automatique">Arrosage automatique</label>
-			<input
-				id="arrosage_automatique"
-				type="checkbox"
-				bind:checked={arrosageAutomatique}
-			/>
-		</div>
-		{#if arrosageAutomatique}
-			<div>
-				<label for="période_arrosage">Répéter l'arrosage (jours)</label> 
-				<!--Il faudrait un selecteur pour choisir plusieurs jours d'arrosages autour de la date choisie-->
+		<div class="flex items-center gap-6 flex-wrap">
+			<div class="flex items-center gap-2 pl-4 pr-20 py-2.5">
 				<input
-					id="période_arrosage"
-					type="number"
-					step="1"
-					min="2"
-					bind:value={periodeArrosage}
-					required
+					id="arrosage_automatique"
+					type="checkbox"
+					bind:checked={arrosageAutomatique}
+					class="rounded"
 				/>
+				<label for="arrosage_automatique" class="text-base font-medium text-gray-700">Arrosage automatique</label>
 			</div>
-		{/if}
+			{#if arrosageAutomatique}
+				<div class="flex items-center gap-2">
+					<!--Il faudrait un selecteur pour choisir plusieurs jours d'arrosages autour de la date choisie-->
+					<label for="période_arrosage" class="text-base font-medium text-gray-700 whitespace-nowrap">Répéter (jours)</label>
+					<input
+						id="période_arrosage"
+						type="number"
+						step="1"
+						min="2"
+						bind:value={periodeArrosage}
+						required
+						class="w-20 rounded border-gray-200 text-base py-2"
+					/>
+				</div>
+			{/if}
+		</div>
 		<div>
-			<label for="temps_arrosage">Durée d'arrosage (minutes)</label>
+			<label for="temps_arrosage" class="block text-base font-medium text-gray-700 mb-1">Durée d'arrosage (minutes)</label>
 			<input
 				id="temps_arrosage"
 				type="number"
@@ -330,30 +346,46 @@ $effect(() => {
 				min="1"
 				bind:value={tempsArrosage}
 				required
+				class="w-full rounded border-gray-200 text-base py-2"
 			/>
 		</div>
 	{/if}
 
 
     <div>
-        <label for="notes">Notes</label>
+        <label for="notes" class="block text-base font-medium text-gray-700 mb-1">Notes</label>
         <textarea
             id="notes"
             bind:value={notes}
             rows="3"
             placeholder="Détails, quantités, observations…"
+            class="w-full rounded border-gray-200 text-base py-2"
         ></textarea>
     </div>
 
     <div>
-        <label for="images">Photos</label>
-        <input
-            id="images"
-            type="file"
-            accept="image/*"
-            multiple
-            onchange={surChangementImages}
-        />
+        <p class="block text-base font-medium text-gray-700 mb-1">Photos</p>
+        <div class="flex items-center gap-3">
+            <label
+                for="images"
+                class="inline-flex items-center px-4 py-2 rounded border border-green-200 bg-green-50 text-base text-green-700 hover:bg-green-100 cursor-pointer"
+            >
+                Choisir des photos
+            </label>
+            <span class="text-base text-gray-500">
+                {imagesSelectionnees.length > 0
+                    ? `${imagesSelectionnees.length} photo${imagesSelectionnees.length > 1 ? 's' : ''} sélectionnée${imagesSelectionnees.length > 1 ? 's' : ''}`
+                    : 'Aucune photo sélectionnée'}
+            </span>
+            <input
+                id="images"
+                type="file"
+                accept="image/*"
+                multiple
+                onchange={surChangementImages}
+                class="hidden"
+            />
+        </div>
         {#if imagesSelectionnees.length > 0}
             <div class="flex flex-wrap gap-2 mt-2">
                 {#each previsualisations as url, index}
@@ -362,7 +394,7 @@ $effect(() => {
                         <button
                             type="button"
                             onclick={() => retirerImage(index)}
-                            class="absolute -top-1.5 -right-1.5 bg-white border border-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-100"
+                            class="absolute -top-1.5 -right-1.5 bg-white border border-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100"
                             aria-label="Retirer cette photo"
                         >
                             ×
@@ -374,24 +406,24 @@ $effect(() => {
     </div>
 
     {#if erreurCultures}
-		<p class="text-sm text-red-600">{erreurCultures}</p>
+		<p class="text-base text-red-600">{erreurCultures}</p>
 	{/if}
 	{#if erreurEnvoi}
-		<p class="text-sm text-red-600">{erreurEnvoi}</p>
+		<p class="text-base text-red-600">{erreurEnvoi}</p>
 	{/if}
 
-	<div class="flex justify-end gap-2 pt-2">
+	<div class="flex justify-end gap-3 pt-2">
 		<button
 			type="button"
 			onclick={oncancel}
-			class="px-4 py-2 rounded text-gray-600 hover:bg-gray-100"
+			class="px-5 py-2.5 text-base rounded text-gray-600 hover:bg-gray-100"
 		>
 			Annuler
 		</button>
 		<button
 			type="submit"
-			disabled={!formValide || envoiEnCours} 
-			class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+			disabled={!formValide || envoiEnCours}
+			class="bg-green-600 text-white px-5 py-2.5 text-base rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			{envoiEnCours ? 'Enregistrement…' : "Enregistrer"}
 		</button>

@@ -5,7 +5,7 @@
 	import EvenementForm from '$lib/components/EvenementForm.svelte';
 	import IconEvenement from '$lib/components/IconEvenement.svelte';
 	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-	import { TYPES_EVENEMENT, couleurType, couleurEvenement } from '$lib/evenementsColor.js';
+	import { TYPES_EVENEMENT, couleurType, couleurEvenement, libelleCulture } from '$lib/utils.js';
 
 	let openModalAjouterEvenement = $state(false);
 
@@ -166,11 +166,11 @@
 				{/each}
 			</div>
 			<div class="flex items-center gap-1.5">
-				<select bind:value={cultureFiltreId} class="text-sm rounded border-gray-200 py-1">
+				<select bind:value={cultureFiltreId} class="text-sm rounded border-gray-200 py-1 max-w-[15rem] flex-none">
 					<option value="">Toutes les cultures</option>
 					{#each culturesTriees as culture}
 						<option value={String(culture.id)}>
-							{culture.nom}{culture.variete ? ` (${culture.variete})` : ''}
+							{libelleCulture(culture, 13, 10)}
 						</option>
 					{/each}
 				</select>
@@ -198,14 +198,14 @@
 
 	<div class="w-1/2 p-6 h-full overflow-y-auto">
 		{#if selected}
-			<h2 class="text-lg font-semibold capitalize mb-4">{formateurDate.format(selected)}</h2>
+			<h2 class="text-2xl font-semibold capitalize mb-4">{formateurDate.format(selected)}</h2>
 
-			<button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick={() => {openModalAjouterEvenement = true}}>
+			<button class="bg-green-600 text-white text-xl px-4 py-2 rounded hover:bg-green-700" onclick={() => {openModalAjouterEvenement = true}}>
 				Ajouter un événement
 			</button>
 
 			{#if evenements.length > 0}
-			<p class="text-gray-500 mb-4 pt-2">Événements enregistrés pour cette date :</p>
+			<p class="text-gray-500 text-lg mb-4 pt-3">Événements enregistrés pour cette date :</p>
 			<ul class="space-y-2">
 				{#each evenements as evenement}
 					{@const style = couleurEvenement(evenement)}
@@ -214,31 +214,31 @@
 						style="border-left-color: {style.couleur}"
 					>
 						<div class="flex items-start justify-between gap-2">
-							<p><strong>Type :</strong> {evenement.type_evenement}</p>
+							<p class="text-lg"><strong>Type :</strong> {evenement.type_evenement}</p>
 							<button
 								type="button"
 								onclick={() => (evenementASupprimer = evenement)}
-								class="flex-none flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+								class="flex-none flex items-center justify-center w-10 h-10 rounded border border-gray-300 text-gray-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
 								aria-label="Supprimer cet événement"
 								title="Supprimer cet événement"
 							>
-								<span class="w-4 h-4">
+								<span class="w-6 h-6">
 									<IconEvenement type="Supprimer" />
 								</span>
 							</button>
 						</div>
 						{#if evenement.culture_nom}
-							<p><strong>Culture :</strong> {evenement.culture_nom} ({evenement.culture_variete})</p>
+							<p class="text-lg"><strong>Culture :</strong> {evenement.culture_nom} ({evenement.culture_variete})</p>
 						{/if}
 						{#if evenement.type_evenement === "Arrosage"}
-							<p><strong>Durée d'arrosage :</strong> {evenement.temps_arrosage} minutes</p>
+							<p class="text-lg"><strong>Durée d'arrosage :</strong> {evenement.temps_arrosage} minutes</p>
 						{/if}
 						{#if evenement.type_evenement === "Température"}
-							<p><strong>Température intérieure :</strong> {evenement.temperature_int} °C</p>
-							<p><strong>Température extérieure :</strong> {evenement.temperature_ext} °C</p>
+							<p class="text-lg"><strong>Température intérieure :</strong> {evenement.temperature_int} °C</p>
+							<p class="text-lg"><strong>Température extérieure :</strong> {evenement.temperature_ext} °C</p>
 						{/if}
 						{#if evenement.notes}
-							<p class="whitespace-pre-wrap break-words"><strong>Notes :</strong> {evenement.notes}</p>
+							<p class="text-lg whitespace-pre-wrap break-words"><strong>Notes :</strong> {evenement.notes}</p>
 						{/if}
 						{#if evenement.images?.length > 0}
 							<div class="flex flex-wrap gap-2 mt-2">
@@ -261,10 +261,10 @@
 				{/each}
 			</ul>
 			{:else}
-			<p class="text-gray-500">Aucun événement enregistré pour cette date.</p>
+			<p class="text-gray-500 text-lg pt-3">Aucun événement enregistré pour cette date.</p>
 			{/if}
 		{:else}
-			<p class="text-gray-500">Sélectionnez une date dans le calendrier.</p>
+			<p class="text-gray-500 text-lg pt-3">Sélectionnez une date dans le calendrier.</p>
 		{/if}
 	</div>
 </div>
@@ -315,12 +315,12 @@
 </Modal>
 
 <Modal open={evenementASupprimer !== null} onclose={() => (evenementASupprimer = null)}>
-	<p class="mb-4">Voulez-vous vraiment supprimer cet événement ?</p>
+	<p class="text-2xl mb-4">Voulez-vous vraiment supprimer cet événement ?</p>
 	<div class="flex justify-end gap-2">
 		<button
 			type="button"
 			onclick={() => (evenementASupprimer = null)}
-			class="px-4 py-2 rounded text-gray-600 hover:bg-gray-100"
+			class="px-4 py-2 rounded text-md text-gray-600 hover:bg-gray-100"
 		>
 			Non
 		</button>
@@ -328,7 +328,7 @@
 			type="button"
 			onclick={confirmerSuppression}
 			disabled={suppressionEnCours}
-			class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+			class="bg-red-600 text-md text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
 		>
 			{suppressionEnCours ? 'Suppression…' : 'Oui'}
 		</button>
@@ -336,13 +336,13 @@
 </Modal>
 
 <Modal open={cultureASupprimer !== null} onclose={() => (cultureASupprimer = null)}>
-	<p class="mb-1">Voulez-vous vraiment supprimer cette culture ?</p>
-	<p class="text-sm text-gray-500 mb-4">Tous les événements liés à cette culture seront également supprimés.</p>
+	<p class="text-2xl mb-1">Voulez-vous vraiment supprimer cette culture ?</p>
+	<p class="text-lg text-gray-500 mb-4">Tous les événements liés à cette culture seront également supprimés.</p>
 	<div class="flex justify-end gap-2">
 		<button
 			type="button"
 			onclick={() => (cultureASupprimer = null)}
-			class="px-4 py-2 rounded text-gray-600 hover:bg-gray-100"
+			class="px-4 py-2 rounded text-md text-gray-600 hover:bg-gray-100"
 		>
 			Non
 		</button>
@@ -359,7 +359,7 @@
 					console.error("Erreur lors de la suppression de la culture :", error);
 				}
 			}}
-			class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+			class="bg-red-600 text-md text-white px-4 py-2 rounded hover:bg-red-700"
 		>
 			Oui
 		</button>

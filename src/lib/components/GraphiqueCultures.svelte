@@ -1,9 +1,9 @@
 <script>
+	import { libelleCulture } from '$lib/utils.js';
 	let {
 		cultures = [],
 		evenementsParCulture = new Map(),
 		type = null,
-		compact = false,
 		enChargement = false,
 		anneeMin = null,
 		anneeMax = null,
@@ -54,14 +54,14 @@
 
 	let yMax = $derived(Math.max(4, Math.ceil(valeurMax / 2) * 2));
 
-	let LARGEUR = $derived(compact ? 320 : 640);
-	let HAUTEUR = $derived(compact ? 160 : 260);
+	const LARGEUR = 320;
+	const HAUTEUR = 160;
 	const MARGE_GAUCHE = 28;
 	const MARGE_DROITE = 8;
 	const MARGE_HAUT = 10;
 	const MARGE_BAS = 22;
-	let LARGEUR_TRACE = $derived(LARGEUR - MARGE_GAUCHE - MARGE_DROITE);
-	let HAUTEUR_TRACE = $derived(HAUTEUR - MARGE_HAUT - MARGE_BAS);
+	const LARGEUR_TRACE = LARGEUR - MARGE_GAUCHE - MARGE_DROITE;
+	const HAUTEUR_TRACE = HAUTEUR - MARGE_HAUT - MARGE_BAS;
 
 	function x(index) {
 		if (moisAxe.length <= 1) return MARGE_GAUCHE + LARGEUR_TRACE / 2;
@@ -83,7 +83,7 @@
 	);
 
 	let ticksY = $derived.by(() => {
-		const nombre = compact ? 2 : 4;
+		const nombre = 2;
 		return Array.from({ length: nombre + 1 }, (_, i) => Math.round((yMax / nombre) * i));
 	});
 
@@ -109,16 +109,16 @@
 	}
 </script>
 
-<div class:border={!compact} class:border-gray-200={!compact} class:rounded-lg={!compact} class:p-4={!compact}>
+<div>
 	{#if cultures.length === 0}
-		<p class="text-gray-500" class:text-sm={!compact} class:text-xs={compact}>
+		<p class="text-gray-500 text-lg">
 			Cochez une culture ci-dessus pour afficher son évolution.
 		</p>
 	{:else if moisAxe.length === 0}
 		{#if enChargement}
-			<p class="text-gray-500" class:text-sm={!compact} class:text-xs={compact}>Chargement…</p>
+			<p class="text-gray-500 text-lg">Chargement…</p>
 		{:else}
-			<p class="text-gray-500" class:text-sm={!compact} class:text-xs={compact}>
+			<p class="text-gray-500 text-lg">
 				Aucun événement enregistré pour {cultures.length > 1 ? 'ces cultures' : 'cette culture'}
 				{anneeMin !== null || anneeMax !== null || moisSelectionnes.length > 0 ? 'sur cette période.' : 'pour le moment.'}
 			</p>
@@ -140,7 +140,7 @@
 						class="stroke-gray-200"
 						stroke-width="1"
 					/>
-					<text x={MARGE_GAUCHE - 6} y={y(valeur)} text-anchor="end" dominant-baseline="middle" class="fill-gray-400" font-size={compact ? 8 : 10}>
+					<text x={MARGE_GAUCHE - 6} y={y(valeur)} text-anchor="end" dominant-baseline="middle" class="fill-gray-400" font-size="8">
 						{valeur}
 					</text>
 				{/each}
@@ -148,10 +148,10 @@
 				{#each moisAxe as mois, i}
 					<text
 						x={x(i)}
-						y={HAUTEUR - MARGE_BAS + (compact ? 13 : 16)}
+						y={HAUTEUR - MARGE_BAS + 13}
 						text-anchor={i === 0 ? 'start' : i === moisAxe.length - 1 ? 'end' : 'middle'}
 						class="fill-gray-400"
-						font-size={compact ? 8 : 10}
+						font-size="8"
 					>
 						{libelleMois(mois)}
 					</text>
@@ -178,7 +178,7 @@
 						stroke-linejoin="round"
 					/>
 					{#each serie.points as p}
-						<circle cx={p.x} cy={p.y} r={compact ? 3 : 4} fill={serie.culture.couleur} stroke="white" stroke-width="1.5" />
+						<circle cx={p.x} cy={p.y} r="3" fill={serie.culture.couleur} stroke="white" stroke-width="1.5" />
 					{/each}
 				{/each}
 
@@ -196,48 +196,28 @@
 
 			{#if survolIndex !== null}
 				{@const pourcentGauche = (x(survolIndex) / LARGEUR) * 100}
+				{@const versLaGauche = pourcentGauche > 50}
 				<div
-					class="absolute top-1 -translate-x-1/2 bg-white border border-gray-200 rounded shadow-sm px-2 py-1.5 text-xs pointer-events-none"
-					style="left: {pourcentGauche}%"
+					class="absolute top-1 bg-white border border-gray-200 rounded shadow-sm px-4 py-3 pointer-events-none w-max max-w-[18rem] space-y-1"
+					style={versLaGauche ? `right: ${100 - pourcentGauche}%` : `left: ${pourcentGauche}%`}
 				>
-					<p class="font-medium text-gray-700 mb-1">{libelleMois(moisAxe[survolIndex])}</p>
+					<p class="font-medium text-lg text-gray-700 mb-1">{libelleMois(moisAxe[survolIndex])}</p>
 					{#each pointsParSerie as serie}
-						<div class="flex items-center gap-1.5">
-							<span class="inline-block w-3 h-0.5" style="background-color: {serie.culture.couleur}"></span>
-							{#if !compact}
-								<span class="text-gray-500">{serie.culture.nom}</span>
-							{/if}
-							<span class="font-semibold text-gray-800">{serie.points[survolIndex].valeur}</span>
+						<div class="flex items-center gap-2">
+							<span class="inline-block w-4 h-0.5 flex-none" style="background-color: {serie.culture.couleur}"></span>
+							<span class="text-gray-500 text-lg break-words min-w-0">
+								{libelleCulture(serie.culture)}
+							</span>
+							<span class="font-semibold text-lg text-gray-800">{serie.points[survolIndex].valeur}</span>
 						</div>
 					{/each}
 				</div>
 			{/if}
 		</div>
 
-		{#if !compact}
-			{#if cultures.length > 1}
-				<div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
-					{#each series as serie}
-						<span class="flex items-center gap-1.5 text-xs text-gray-600">
-							<span class="inline-block w-4 h-0.5" style="background-color: {serie.culture.couleur}"></span>
-							{serie.culture.nom}{serie.culture.variete ? ` (${serie.culture.variete})` : ''}
-						</span>
-					{/each}
-				</div>
-			{:else}
-				<p class="text-xs text-gray-500 mt-2">
-					{cultures[0].nom}{cultures[0].variete ? ` (${cultures[0].variete})` : ''}
-				</p>
-			{/if}
-		{/if}
-
 		<button
 			type="button"
-			class="text-green-700 hover:underline"
-			class:text-xs={!compact}
-			class:mt-3={!compact}
-			class:text-[10px]={compact}
-			class:mt-1.5={compact}
+			class="text-green-700 hover:underline text-md mt-1.5"
 			onclick={() => (afficherTableau = !afficherTableau)}
 		>
 			{afficherTableau ? 'Masquer' : 'Afficher'} les données en tableau
@@ -245,12 +225,12 @@
 
 		{#if afficherTableau}
 			<div class="overflow-x-auto mt-2">
-				<table class="w-full" class:text-xs={!compact} class:text-[10px]={compact}>
+				<table class="w-full text-lg">
 					<thead>
 						<tr>
 							<th class="text-left text-gray-500 font-medium pr-3 py-1">Mois</th>
 							{#each series as serie}
-								<th class="text-left text-gray-500 font-medium pr-3 py-1">{serie.culture.nom}</th>
+								<th class="text-left text-gray-500 font-medium pr-3 py-1">{libelleCulture(serie.culture)}</th>
 							{/each}
 						</tr>
 					</thead>
