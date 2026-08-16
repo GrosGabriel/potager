@@ -228,7 +228,7 @@
 							</button>
 						</div>
 						{#if evenement.culture_nom}
-							<p class="text-lg"><strong>Culture :</strong> {evenement.culture_nom} {evenement.culture_variete ? evenement.culture_variete : ''}</p>
+							<p class="text-lg"><strong>Culture :</strong> {evenement.culture_nom} {evenement.culture_variete ? `(${evenement.culture_variete})` : ''}</p>
 						{/if}
 						{#if evenement.type_evenement === "Arrosage"}
 							<p class="text-lg"><strong>Durée d'arrosage :</strong> {evenement.temps_arrosage} minutes</p>
