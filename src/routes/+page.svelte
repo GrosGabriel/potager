@@ -13,7 +13,7 @@
 				<IconEvenement type="Plantation" />
 			</span>
 		</span>
-		<h1 class="text-4xl font-semibold text-gray-800 mb-2">PotagerLog</h1>
+		<h1 class="text-4xl font-semibold text-gray-800 mb-2">Le potager numérique</h1>
 		<p class="text-lg text-gray-500">Journal des événements et des cultures de votre potager.</p>
 	</div>
 
