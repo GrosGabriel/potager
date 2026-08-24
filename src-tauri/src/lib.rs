@@ -13,6 +13,11 @@ fn ajouter_culture_cmd(nom: String, variete: Option<String>, couleur: String) ->
 }
 
 #[tauri::command]
+fn modifier_couleur_culture_cmd(culture_id: i32, couleur: String) -> Result<(), String> {
+    db::modifier_couleur_culture(culture_id, couleur).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn ajouter_evenement_cmd(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>, temperature_int: Option<f32>, temperature_ext: Option<f32>, temps_arrosage: Option<i32>) -> Result<i32, String> {
     db::ajouter_evenement(culture_id, type_event, date, notes, temperature_int, temperature_ext, temps_arrosage).map_err(|e| e.to_string())
 }
@@ -92,8 +97,9 @@ pub fn run() {
   tauri::Builder::default()
     //Ajouter dans le invoke handler les fonctions que l'on souhaite exposer à l'interface utilisateur
     .invoke_handler(tauri::generate_handler![
-        ajouter_culture_cmd, 
-        lister_cultures_cmd, 
+        ajouter_culture_cmd,
+        modifier_couleur_culture_cmd,
+        lister_cultures_cmd,
         ajouter_evenement_cmd,
         ajouter_evenement_avec_repetition_cmd,
         ajouter_image_cmd,

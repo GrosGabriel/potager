@@ -151,6 +151,15 @@ pub fn ajouter_culture(nom: String, variete: Option<String>, couleur: String) ->
     Ok(())
 }
 
+pub fn modifier_couleur_culture(culture_id: i32, couleur: String) -> Result<()> {
+    let conn = get_connection()?;
+    conn.execute(
+        "UPDATE cultures SET couleur = ?1 WHERE id = ?2",
+        (&couleur, &culture_id)
+    )?;
+    Ok(())
+}
+
 pub fn ajouter_evenement(culture_id: Option<i32>, type_event: String, date: String, notes: Option<String>, temperature_int: Option<f32>, temperature_ext: Option<f32>, temps_arrosage: Option<i32>) -> Result<i32> {
     let conn = get_connection()?;
     conn.execute(

@@ -9,6 +9,17 @@ export const TYPES_EVENEMENT = [
 	'Floraison'
 ];
 
+export const TYPES_EVENEMENTS_TRI = {
+	"Journal": 0,
+	"Température" : 1,
+	"Semis" : 2,
+	"Plantation": 3,
+	"Récolte": 4,
+	"Retrait": 5,
+	"Arrosage": 6,
+	"Floraison": 7
+}
+
 export const TYPES_COULEUR_CULTURE = new Set(['Semis', 'Plantation', 'Récolte', 'Floraison']);
 
 export const COULEUR_PAR_TYPE = {

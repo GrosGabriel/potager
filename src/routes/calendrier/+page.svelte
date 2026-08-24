@@ -5,9 +5,10 @@
 	import EvenementForm from '$lib/components/EvenementForm.svelte';
 	import IconEvenement from '$lib/components/IconEvenement.svelte';
 	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-	import { TYPES_EVENEMENT, couleurType, couleurEvenement, libelleCulture } from '$lib/utils.js';
+	import { TYPES_EVENEMENT, TYPES_EVENEMENTS_TRI, couleurType, couleurEvenement, libelleCulture } from '$lib/utils.js';
 
 	let openModalAjouterEvenement = $state(false);
+
 
 	let lightboxOuvert = $state(false);
 	let lightboxImages = $state([]);
@@ -46,6 +47,7 @@
 	let typesActifs = $state(new Set(TYPES_EVENEMENT));
 	let cultureFiltreId = $state('');
 	let cultureASupprimer = $state(null);
+	let cultureFiltree = $derived(cultures.find((c) => String(c.id) === cultureFiltreId));
 
 	let evenementsFiltres = $derived(
 		tousEvenements.filter(
@@ -54,6 +56,12 @@
 				(cultureFiltreId === '' || String(e.culture_id) === cultureFiltreId)
 		)
 	);
+
+	let evenementsSorted = $derived(
+		[...evenements].sort((a,b) => {
+			return TYPES_EVENEMENTS_TRI[a.type_evenement] - TYPES_EVENEMENTS_TRI[b.type_evenement];
+		})
+	)
 
 	function basculerType(type) {
 		const nouveau = new Set(typesActifs);
@@ -107,6 +115,18 @@
 			})
 			.catch((error) => {
 				console.error("Erreur lors de la récupération des cultures :", error);
+			});
+	}
+
+	function modifierCouleurCulture(cultureId, couleur) {
+		invoke("modifier_couleur_culture_cmd", { cultureId: parseInt(cultureId), couleur })
+			.then(() => {
+				rafraichirCultures();
+				rafraichirTousEvenements();
+				rafraichirEvenements();
+			})
+			.catch((error) => {
+				console.error("Erreur lors de la modification de la couleur de la culture :", error);
 			});
 	}
 
@@ -175,7 +195,16 @@
 					{/each}
 				</select>
 
-				{#if cultureFiltreId !== ''}
+				{#if cultureFiltreId !== '' && cultureFiltree}
+					<input
+						type="color"
+						value={cultureFiltree.couleur}
+						onchange={(e) => modifierCouleurCulture(cultureFiltreId, e.currentTarget.value)}
+						class="flex-none w-8 h-8 rounded border border-gray-300 p-0.5 cursor-pointer"
+						aria-label="Changer la couleur de cette culture"
+						title="Changer la couleur de cette culture"
+					/>
+
 					<button
 						type="button"
 						onclick={() => (cultureASupprimer = cultureFiltreId)}
@@ -207,7 +236,7 @@
 			{#if evenements.length > 0}
 			<p class="text-gray-500 text-lg mb-4 pt-3">Événements enregistrés pour cette date :</p>
 			<ul class="space-y-2">
-				{#each evenements as evenement}
+				{#each evenementsSorted as evenement}
 					{@const style = couleurEvenement(evenement)}
 					<li
 						class="border border-l-4 border-gray-200 rounded p-4"
