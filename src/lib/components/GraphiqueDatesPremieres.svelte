@@ -59,10 +59,10 @@
 
 	const LARGEUR = 400;
 	const HAUTEUR = 220;
-	const MARGE_GAUCHE = 32;
+	const MARGE_GAUCHE = 40;
 	const MARGE_DROITE = 8;
 	const MARGE_HAUT = 10;
-	const MARGE_BAS = 20;
+	const MARGE_BAS = 38;
 	const LARGEUR_TRACE = LARGEUR - MARGE_GAUCHE - MARGE_DROITE;
 	const HAUTEUR_TRACE = HAUTEUR - MARGE_HAUT - MARGE_BAS;
 	const JOUR_MAX = 366;
@@ -74,6 +74,8 @@
 	let largeurGroupe = $derived(annees.length > 0 ? LARGEUR_TRACE / annees.length : 0);
 	const LARGEUR_BARRE_MAX = 14;
 	const ESPACE_BARRE = 2;
+	let pivoterLibellesX = $derived(annees.length >= 10);
+	let tailleLibellesX = $derived(Math.max(5, (8 * 10) / Math.max(10, annees.length)));
 
 	let barres = $derived.by(() => {
 		const largeurBarre = Math.min(LARGEUR_BARRE_MAX, (largeurGroupe - 2 * ESPACE_BARRE) / TYPES.length);
@@ -127,9 +129,10 @@
 					<text
 						x={MARGE_GAUCHE + i * largeurGroupe + largeurGroupe / 2}
 						y={HAUTEUR - MARGE_BAS + 12}
-						text-anchor="middle"
+						text-anchor={pivoterLibellesX ? 'end' : 'middle'}
+						transform={pivoterLibellesX ? `rotate(-45 ${MARGE_GAUCHE + i * largeurGroupe + largeurGroupe / 2} ${HAUTEUR - MARGE_BAS + 12})` : undefined}
 						class="fill-gray-400"
-						font-size="8"
+						font-size={tailleLibellesX}
 					>
 						{annee}
 					</text>

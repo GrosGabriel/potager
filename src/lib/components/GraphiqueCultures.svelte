@@ -56,10 +56,10 @@
 
 	const LARGEUR = 320;
 	const HAUTEUR = 160;
-	const MARGE_GAUCHE = 28;
+	const MARGE_GAUCHE = 40;
 	const MARGE_DROITE = 8;
 	const MARGE_HAUT = 10;
-	const MARGE_BAS = 22;
+	const MARGE_BAS = 52;
 	const LARGEUR_TRACE = LARGEUR - MARGE_GAUCHE - MARGE_DROITE;
 	const HAUTEUR_TRACE = HAUTEUR - MARGE_HAUT - MARGE_BAS;
 
@@ -86,6 +86,9 @@
 		const nombre = 2;
 		return Array.from({ length: nombre + 1 }, (_, i) => Math.round((yMax / nombre) * i));
 	});
+
+	let pivoterLibellesX = $derived(moisAxe.length >= 6);
+	let tailleLibellesX = $derived(Math.max(4, (8 * 6) / Math.max(6, moisAxe.length)));
 
 	function surSurvol(event) {
 		if (moisAxe.length === 0) return;
@@ -149,9 +152,10 @@
 					<text
 						x={x(i)}
 						y={HAUTEUR - MARGE_BAS + 13}
-						text-anchor={i === 0 ? 'start' : i === moisAxe.length - 1 ? 'end' : 'middle'}
+						text-anchor={pivoterLibellesX || i === moisAxe.length - 1 ? 'end' : 'middle'}
+						transform={pivoterLibellesX ? `rotate(-45 ${x(i)} ${HAUTEUR - MARGE_BAS + 13})` : undefined}
 						class="fill-gray-400"
-						font-size="8"
+						font-size={tailleLibellesX}
 					>
 						{libelleMois(mois)}
 					</text>
