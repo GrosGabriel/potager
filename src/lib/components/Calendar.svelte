@@ -127,12 +127,12 @@
 			←
 		</button>
 		<div class="flex items-center gap-2">
-			<select bind:value={moisAffiche} class="text-base font-medium rounded border-gray-200 py-1">
+			<select bind:value={moisAffiche} class="text-base font-medium rounded border border-gray-200 py-1 transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 				{#each nomsMois as nom, i}
 					<option value={i}>{nom}</option>
 				{/each}
 			</select>
-			<select bind:value={anneeAffichee} class="text-base font-medium rounded border-gray-200 py-1">
+			<select bind:value={anneeAffichee} class="text-base font-medium rounded border border-gray-200 py-1 transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 				{#each ANNEES as annee}
 					<option value={annee}>{annee}</option>
 				{/each}

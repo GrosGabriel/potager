@@ -41,7 +41,7 @@ let anneeMin = $state('');
 let anneeMax = $state('');
 let anneeMinNombre = $derived(anneeMin === '' ? null : Number(anneeMin));
 let anneeMaxNombre = $derived(anneeMax === '' ? null : Number(anneeMax));
-let moisSelectionnesCultures = $state([]);
+let moisSelectionnesCultures = $state(Array.from({ length: 12 }, (_, i) => i + 1));
 
 $effect(() => {
 	for (const culture of culturesSelectionnees) {
@@ -131,14 +131,14 @@ let anneeMinGen = $state('');
 let anneeMaxGen = $state('');
 let anneeMinGenNombre = $derived(anneeMinGen === '' ? null : Number(anneeMinGen));
 let anneeMaxGenNombre = $derived(anneeMaxGen === '' ? null : Number(anneeMaxGen));
-let moisSelectionnesGen = $state([]);
+let moisSelectionnesGen = $state(Array.from({ length: 12 }, (_, i) => i + 1));
 
 function dansPeriodeGen(dateISO) {
 	const annee = Number(dateISO.slice(0, 4));
 	const mois = Number(dateISO.slice(5, 7));
 	if (anneeMinGenNombre !== null && annee < anneeMinGenNombre) return false;
 	if (anneeMaxGenNombre !== null && annee > anneeMaxGenNombre) return false;
-	if (moisSelectionnesGen.length > 0 && !moisSelectionnesGen.includes(mois)) return false;
+	if (moisSelectionnesGen.length < 12 && !moisSelectionnesGen.includes(mois)) return false;
 	return true;
 }
 
@@ -157,7 +157,7 @@ let nombreEvenementsParTypeFiltre = $derived.by(() => {
 });
 
 let periodeGenActive = $derived(
-	anneeMinGenNombre !== null || anneeMaxGenNombre !== null || moisSelectionnesGen.length > 0
+	anneeMinGenNombre !== null || anneeMaxGenNombre !== null || moisSelectionnesGen.length < 12
 );
 
 let dateParEvenementId = $derived(new Map(tousEvenements.map((e) => [e.id, e.date])));
@@ -259,14 +259,14 @@ onMount(() => {
 					<p class="text-2xl font-semibold text-gray-700 text-center">Selectionner la période</p>
 					<div class="flex items-center justify-center gap-2 text-lg text-gray-600">
 						<span>Période de</span>
-						<select bind:value={anneeMin} class="rounded border-gray-200 py-1 text-lg">
+						<select bind:value={anneeMin} class="rounded border border-gray-200 py-1 text-lg transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 							<option value="">Toutes les années</option>
 							{#each ANNEES as annee}
 								<option value={String(annee)}>{annee}</option>
 							{/each}
 						</select>
 						<span>à</span>
-						<select bind:value={anneeMax} class="rounded border-gray-200 py-1 text-lg">
+						<select bind:value={anneeMax} class="rounded border border-gray-200 py-1 text-lg transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 							<option value="">Toutes les années</option>
 							{#each ANNEES as annee}
 								<option value={String(annee)}>{annee}</option>
@@ -394,14 +394,14 @@ onMount(() => {
 					<p class="text-2xl font-semibold text-gray-700 text-center">Selectionner la période</p>
 					<div class="flex items-center justify-center gap-2 text-lg text-gray-600">
 						<span>Période de</span>
-						<select bind:value={anneeMinGen} class="rounded border-gray-200 py-1 text-lg">
+						<select bind:value={anneeMinGen} class="rounded border border-gray-200 py-1 text-lg transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 							<option value="">Toutes les années</option>
 							{#each ANNEES as annee}
 								<option value={String(annee)}>{annee}</option>
 							{/each}
 						</select>
 						<span>à</span>
-						<select bind:value={anneeMaxGen} class="rounded border-gray-200 py-1 text-lg">
+						<select bind:value={anneeMaxGen} class="rounded border border-gray-200 py-1 text-lg transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
 							<option value="">Toutes les années</option>
 							{#each ANNEES as annee}
 								<option value={String(annee)}>{annee}</option>

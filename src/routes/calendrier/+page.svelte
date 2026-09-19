@@ -4,8 +4,9 @@
     import Modal from '$lib/components/Modal.svelte';
 	import EvenementForm from '$lib/components/EvenementForm.svelte';
 	import IconEvenement from '$lib/components/IconEvenement.svelte';
+	import SelectTypesEvenement from '$lib/components/SelectTypesEvenement.svelte';
 	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-	import { TYPES_EVENEMENT, TYPES_EVENEMENTS_TRI, couleurType, couleurEvenement, libelleCulture } from '$lib/utils.js';
+	import { TYPES_EVENEMENT, TYPES_EVENEMENTS_TRI, couleurEvenement, libelleCulture } from '$lib/utils.js';
 
 	let openModalAjouterEvenement = $state(false);
 
@@ -63,15 +64,6 @@
 		})
 	)
 
-	function basculerType(type) {
-		const nouveau = new Set(typesActifs);
-		if (nouveau.has(type)) {
-			nouveau.delete(type);
-		} else {
-			nouveau.add(type);
-		}
-		typesActifs = nouveau;
-	}
 	const formateurDate = new Intl.DateTimeFormat('fr-FR', {
 		weekday: 'long',
 		day: 'numeric',
@@ -171,22 +163,13 @@
 <div class="flex h-[calc(100vh-49px)] overflow-hidden">
 	<div class="w-1/2 border-r border-gray-200 p-6 flex flex-col h-full overflow-hidden">
 		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-			<div class="flex flex-wrap gap-x-3 gap-y-1.5">
-				{#each TYPES_EVENEMENT as type}
-					<label class="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={typesActifs.has(type)}
-							onchange={() => basculerType(type)}
-							class="rounded"
-							style="accent-color: {couleurType(type)}"
-						/>
-						{type}
-					</label>
-				{/each}
+			<div class="flex items-center gap-1.5">
+				<span class="text-sm text-gray-600">Événements :</span>
+				<SelectTypesEvenement bind:typesActifs />
 			</div>
 			<div class="flex items-center gap-1.5">
-				<select bind:value={cultureFiltreId} class="text-sm rounded border-gray-200 py-1 max-w-[15rem] flex-none">
+				<label for="culture-filtre" class="text-sm text-gray-600">Culture :</label>
+				<select id="culture-filtre" bind:value={cultureFiltreId} class="text-sm rounded border border-gray-200 py-1 max-w-[15rem] flex-none transition-colors hover:border-b-green-600 hover:bg-gray-50 focus:outline-none focus:ring-0">
 					<option value="">Toutes les cultures</option>
 					{#each culturesTriees as culture}
 						<option value={String(culture.id)}>

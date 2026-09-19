@@ -206,7 +206,7 @@ $effect(() => {
     <div class="grid grid-cols-2 gap-4">
         <div>
             <label for="type_evenement" class="block text-base font-medium text-gray-700 mb-1">Type d'événement</label>
-            <select id="type_evenement" bind:value={typeEvenement} required class="w-full rounded border-gray-200 text-base py-2">
+			<select id="type_evenement" bind:value={typeEvenement} required class="w-full rounded border border-gray-200 text-base py-2 transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
                 {#each typesEvenement as type}
                     <option value={type}>{type}</option>
                 {/each}
@@ -235,7 +235,7 @@ $effect(() => {
         <div class="flex justify-center">
           <div class="w-fit">
             <label for="culture" class="block text-base font-medium text-gray-700 mb-1">Culture</label>
-            <select id="culture" bind:value={cultureId} required class="rounded border-gray-200 text-base py-2">
+			<select id="culture" bind:value={cultureId} required class="rounded border border-gray-200 text-base py-2 transition-colors hover:border-b-green-600 focus:outline-none focus:ring-0">
                 {#each culturesTriees as culture}
                     <option value={String(culture.id)}>
                         {libelleCulture(culture)}

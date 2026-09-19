@@ -14,7 +14,7 @@
 		const mois = Number(dateISO.slice(5, 7));
 		if (anneeMin !== null && annee < anneeMin) return false;
 		if (anneeMax !== null && annee > anneeMax) return false;
-		if (moisSelectionnes.length > 0 && !moisSelectionnes.includes(mois)) return false;
+		if (moisSelectionnes.length < 12 && !moisSelectionnes.includes(mois)) return false;
 		return true;
 	}
 
